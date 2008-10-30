@@ -1,0 +1,9 @@
+alter_table allows you to modify several properties of a mysql table simultaneously.
+
+Instead of issuing individual add_column table_name, column_name, type statements, you can bundle
+these calls up in a block.
+
+alter_table 'games' do |t|
+  t.add_column 'body_class', :string
+  t.add_column 'no_good', :boolean, :default => true, :null => false
+end
