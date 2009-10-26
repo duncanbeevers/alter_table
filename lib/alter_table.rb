@@ -13,6 +13,9 @@ module AlterTable
       yield acc
       
       execute("ALTER TABLE #{quote_table_name(table_name)} #{sql_from_accumulator(acc)}")
+      acc.rename_columns.each do |(old_name, new_name)|
+        rename_column table_name, old_name, new_name
+      end
     end
     
     def sql_from_accumulator acc
@@ -46,10 +49,11 @@ module AlterTable
   end
   
   class TableOperationAccumulator
-    attr_reader :add_columns, :remove_columns
+    attr_reader :add_columns, :remove_columns, :rename_columns
     def initialize
       @add_columns    = []
       @remove_columns = []
+      @rename_columns = []
     end
     
     def add_column *args
@@ -60,6 +64,10 @@ module AlterTable
       @remove_columns += column_names.flatten
     end
     alias :remove_columns :remove_column
+    
+    def rename_column old_name, new_name
+      @rename_columns << [ old_name, new_name ]
+    end
   end
   
 end
