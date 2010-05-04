@@ -12,9 +12,21 @@ module AlterTable
       acc = TableOperationAccumulator.new
       yield acc
       
+      report_operations(acc) if ActiveRecord::Migration.verbose
       execute("ALTER TABLE #{quote_table_name(table_name)} #{sql_from_accumulator(acc)}")
       acc.rename_columns.each do |(old_name, new_name)|
         rename_column table_name, old_name, new_name
+      end
+    end
+    
+    def report_operations(acc)
+      if !acc.add_columns.blank?
+        puts "* Adding columns:\n%s" %
+          acc.add_columns.map { |ac| "\t%s" % ac.map { |c| c.inspect }.join("\n")
+      end
+      if !acc.remove_columns.blank?
+        puts "* Removing columns: %s" %
+          acc.remove_columns.map { |rc| "\t%s" % rc.inspect }.join("\n")
       end
     end
     
