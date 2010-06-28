@@ -20,8 +20,10 @@ class AlterTableTest < ActiveRecord::TestCase
   end
   
   def test_add_column
-    alter_model_table do |t|
-      t.add_column 'name', :string
+    assert_queries(1) do
+      alter_model_table do |t|
+        t.add_column 'name', :string
+      end
     end
     assert model.column_names.include?('name')
   end
