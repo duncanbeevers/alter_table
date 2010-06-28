@@ -14,9 +14,6 @@ module AlterTable
       
       report_operations(acc) if ActiveRecord::Migration.verbose
       execute("ALTER TABLE #{quote_table_name(table_name)} #{sql_from_accumulator(acc)}")
-      acc.rename_columns.each do |(old_name, new_name)|
-        rename_column table_name, old_name, new_name
-      end
     end
     
     def report_operations(acc)
@@ -34,7 +31,8 @@ module AlterTable
       [ sql_from_accumulator_for_add_columns(acc),
         sql_from_accumulator_for_remove_columns(acc),
         sql_from_accumulator_for_add_indexes(acc),
-        sql_from_accumulator_for_remove_indexes(acc)
+        sql_from_accumulator_for_remove_indexes(acc),
+        sql_from_accumulator_for_rename_columns(acc)
       ].select { |s| !s.blank? }.join(',')
     end
     
@@ -73,6 +71,24 @@ module AlterTable
     def sql_from_accumulator_for_remove_indexes acc
       acc.remove_indexes.map { |index_name|
         "DROP INDEX %s" % [ quote_column_name(index_name) ]
+      }
+    end
+    
+    def sql_from_accumulator_for_rename_columns acc
+      return nil if acc.rename_columns.blank?
+      
+      col_defs = select("SHOW COLUMNS FROM #{quote_table_name(acc.table_name)}").inject({}) do |a, c|
+        a[c['Field']] = c['Type']
+        a
+      end
+      
+      acc.rename_columns.map { |old_name, new_name|
+        current_type = 
+        "CHANGE %s %s %s" % [
+          quote_column_name(old_name),
+          quote_column_name(new_name),
+          col_defs[old_name]
+        ]
       }
     end
   end
