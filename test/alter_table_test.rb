@@ -17,10 +17,7 @@ class AlterTableTest < ActiveRecord::TestCase
   end
   
   def test_remove_column
-    alter_model_table do |t|
-      t.add_column 'age', :integer
-    end
-    assert_column 'age', :integer
+    add_age_column
     alter_model_table do |t|
       t.remove_column 'age'
     end
@@ -28,10 +25,7 @@ class AlterTableTest < ActiveRecord::TestCase
   end
   
   def test_rename_column
-    alter_model_table do |t|
-      t.add_column 'age', :integer
-    end
-    assert_column 'age', :integer
+    add_age_column
     alter_model_table do |t|
       t.rename_column 'age', 'years_old'
     end
@@ -76,6 +70,13 @@ class AlterTableTest < ActiveRecord::TestCase
       ActiveRecord::Base.connection.alter_table(model.table_name) do |t|
         yield(t)
       end
+    end
+    
+    def add_age_column
+      alter_model_table do |t|
+        t.add_column 'age', :integer
+      end
+      assert_column 'age', :integer
     end
     
     def assert_column name, expected_type, options = {}
