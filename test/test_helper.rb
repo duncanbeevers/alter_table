@@ -10,6 +10,7 @@ require 'ruby-debug'
 
 ActiveRecord::Base.configurations = YAML::load(File.open(File.join(TEST_ROOT, 'database.yml')))
 ActiveRecord::Base.establish_connection(:alter_table_test)
+ActiveRecord::Base.logger = Logger.new(File.join(TEST_ROOT, '/test.log'))
 
 # Cribbed from Rails tests
 ActiveRecord::Base.connection.class.class_eval do
