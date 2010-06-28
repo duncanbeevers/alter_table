@@ -52,6 +52,14 @@ class AlterTableTest < ActiveRecord::TestCase
       :columns => [ 'age' ]
   end
   
+  def test_remove_index
+    add_indexed_age_column
+    alter_model_table do |t|
+      t.remove_index 'index_users_on_age'
+    end
+    assert_no_index 'index_users_on_age'
+  end
+  
   private
     def create_model_table
       ActiveRecord::Base.connection.create_table('users') do |t|
@@ -89,6 +97,16 @@ class AlterTableTest < ActiveRecord::TestCase
       assert_column 'age', :integer
     end
     
+    def add_indexed_age_column
+      add_age_column
+      alter_model_table do |t|
+        t.add_index [ 'age' ], :unique => true
+      end
+      assert_index 'index_users_on_age',
+        :unique  => true,
+        :columns => [ 'age' ]
+    end
+    
     def assert_column name, expected_type, options = {}
       column = model.columns.find { |c| name == c.name }
       flunk "Expected column %s was not found" % name unless column
@@ -113,6 +131,10 @@ class AlterTableTest < ActiveRecord::TestCase
       assert_equal options[:columns], index.columns if options.has_key?(:columns)
     end
     
+    def assert_no_index name
+      index = ActiveRecord::Base.connection.indexes(model.table_name).find { |c| name == c.name }
+      assert_nil index, "Expected not to have found an index %s" % name
+    end
 end
 
 def model
