@@ -22,7 +22,7 @@ module AlterTable
     def report_operations(acc)
       if !acc.add_columns.blank?
         puts "* Adding columns:\n%s" %
-          acc.add_columns.map { |ac| "\t%s" % ac.map { |c| c.inspect }.join("\n")
+          acc.add_columns.map { |ac| "\t%s" % ac.map { |c| c.inspect } }.join("\n")
       end
       if !acc.remove_columns.blank?
         puts "* Removing columns: %s" %
