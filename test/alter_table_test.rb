@@ -10,12 +10,19 @@ class AlterTableTest < ActiveRecord::TestCase
   end
   
   def test_add_column
+    alter_model_table do |t|
+      t.add_column 'name', :string
+    end
+    assert_column 'name', :string
+  end
+  
+  def test_add_multiple_columns
     assert_queries(1) do
       alter_model_table do |t|
         t.add_column 'name', :string
+        t.add_column 'age',  :integer
       end
     end
-    assert_column 'name', :string
   end
   
   private
