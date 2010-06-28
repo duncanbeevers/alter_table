@@ -16,6 +16,17 @@ class AlterTableTest < ActiveRecord::TestCase
     assert_column 'name', :string
   end
   
+  def test_remove_column
+    alter_model_table do |t|
+      t.add_column 'age', :integer
+    end
+    assert_column 'age', :integer
+    alter_model_table do |t|
+      t.remove_column 'age'
+    end
+    assert_no_column 'age'
+  end
+  
   def test_add_multiple_columns
     assert_queries(1) do
       alter_model_table do |t|
@@ -65,6 +76,11 @@ class AlterTableTest < ActiveRecord::TestCase
       assert_equal options[:limit],     column.limit     if options.has_key?(:limit)
       assert_equal options[:scale],     column.scale     if options.has_key?(:scale)
       assert_equal options[:precision], column.precision if options.has_key?(:precision)
+    end
+    
+    def assert_no_column name
+      column = model.columns.find { |c| name == c.name }
+      assert_nil column, "Expected not to have found a column %s" % name
     end
     
 end
