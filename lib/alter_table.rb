@@ -33,12 +33,10 @@ module AlterTable
     def sql_from_accumulator acc
       [ sql_from_accumulator_for_add_columns(acc),
         sql_from_accumulator_for_remove_columns(acc),
-      ].compact.join(',')
+      ].select { |s| !s.blank? }.join(',')
     end
     
     def sql_from_accumulator_for_add_columns acc
-      return nil if acc.add_columns.blank?
-      
       acc.add_columns.map { |args|
         column_name = args.shift
         type        = args.shift
@@ -52,8 +50,6 @@ module AlterTable
     end
     
     def sql_from_accumulator_for_remove_columns acc
-      return nil if acc.remove_columns.blank?
-      
       acc.remove_columns.map { |column_name|
         "DROP #{quote_column_name(column_name)}"
       }.join(',')
