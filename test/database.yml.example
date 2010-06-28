@@ -1,0 +1,6 @@
+alter_table_test:
+  adapter: mysql
+  host: localhost
+  database: alter_table_test
+  username: 
+  password: 
