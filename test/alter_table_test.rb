@@ -25,7 +25,16 @@ class AlterTableTest < ActiveRecord::TestCase
         t.add_column 'name', :string
       end
     end
-    assert model.column_names.include?('name')
+    name_column = model.columns.find do |c|
+      'name' == c.name
+    end
+    assert_equal :string, name_column.type
+    assert_equal nil, name_column.default
+    assert_equal false, name_column.primary
+    assert_equal 'varchar(255)', name_column.sql_type
+    assert_equal 255, name_column.limit
+    assert_equal nil, name_column.scale
+    assert_equal nil, name_column.precision
   end
   
   private
