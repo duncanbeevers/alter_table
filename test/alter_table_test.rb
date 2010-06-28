@@ -81,7 +81,7 @@ class AlterTableTest < ActiveRecord::TestCase
     
     def assert_column name, expected_type, options = {}
       column = model.columns.find { |c| name == c.name }
-      flunk "Expected column %s not found" % name unless name
+      flunk "Expected column %s was not found" % name unless column
       assert_equal expected_type, column.type
       assert_equal options[:default],   column.default   if options.has_key?(:default)
       assert_equal options[:primary],   column.primary   if options.has_key?(:primary)
