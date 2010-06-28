@@ -11,6 +11,13 @@ class AlterTableTest < Test::Unit::TestCase
     ActiveRecord::Base.connection.drop_table('users')
   end
   
+  def test_add_column
+    alter_model_table do |t|
+      t.add_column 'name', :string
+    end
+    assert model.column_names.include?('name')
+  end
+  
   def alter_model_table
     ActiveRecord::Base.connection.alter_table(model.table_name) do |t|
       yield(t)
