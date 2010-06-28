@@ -9,7 +9,7 @@ module AlterTable
   
   module InstanceMethods
     def alter_table table_name
-      acc = TableOperationAccumulator.new
+      acc = TableOperationAccumulator.new(table_name)
       yield acc
       
       report_operations(acc) if ActiveRecord::Migration.verbose
@@ -33,6 +33,8 @@ module AlterTable
     def sql_from_accumulator acc
       [ sql_from_accumulator_for_add_columns(acc),
         sql_from_accumulator_for_remove_columns(acc),
+        sql_from_accumulator_for_add_indexes(acc),
+        sql_from_accumulator_for_remove_indexes(acc)
       ].select { |s| !s.blank? }.join(',')
     end
     
@@ -54,14 +56,39 @@ module AlterTable
         "DROP #{quote_column_name(column_name)}"
       }.join(',')
     end
+    
+    def sql_from_accumulator_for_add_indexes acc
+      acc.add_indexes.map { |column_names, options|
+        index_type = options[:unique] ? 'UNIQUE' : ''
+        index_name = options[:name] || index_name(acc.table_name, :column => column_names)
+        quoted_column_names = column_names.map { |c| quote_column_name(c) }.join(',')
+        "ADD %s INDEX %s (%s)" % [
+          index_type,
+          quote_column_name(index_name),
+          quoted_column_names
+        ]
+      }.join(',')
+    end
+    
+    def sql_from_accumulator_for_remove_indexes acc
+      acc.remove_indexes.map { |index_name|
+        "DROP INDEX %s" % [ quote_column_name(index_name) ]
+      }
+    end
   end
   
   class TableOperationAccumulator
-    attr_reader :add_columns, :remove_columns, :rename_columns
-    def initialize
+    attr_reader :table_name,
+                :add_columns, :remove_columns, :rename_columns,
+                :add_indexes, :remove_indexes
+    
+    def initialize(table_name)
+      @table_name     = table_name
       @add_columns    = []
       @remove_columns = []
       @rename_columns = []
+      @add_indexes    = []
+      @remove_indexes = []
     end
     
     def add_column *args
@@ -75,6 +102,14 @@ module AlterTable
     
     def rename_column old_name, new_name
       @rename_columns << [ old_name, new_name ]
+    end
+    
+    def add_index column_names, options = {}
+      @add_indexes << [ Array(column_names), options ]
+    end
+    
+    def remove_index index_name
+      @remove_indexes << index_name
     end
   end
   
