@@ -25,16 +25,7 @@ class AlterTableTest < ActiveRecord::TestCase
         t.add_column 'name', :string
       end
     end
-    name_column = model.columns.find do |c|
-      'name' == c.name
-    end
-    assert_equal :string, name_column.type
-    assert_equal nil, name_column.default
-    assert_equal false, name_column.primary
-    assert_equal 'varchar(255)', name_column.sql_type
-    assert_equal 255, name_column.limit
-    assert_equal nil, name_column.scale
-    assert_equal nil, name_column.precision
+    assert_column 'name', :string
   end
   
   private
@@ -52,6 +43,19 @@ class AlterTableTest < ActiveRecord::TestCase
         yield(t)
       end
     end
+    
+    def assert_column name, expected_type, options = {}
+      column = model.columns.find { |c| name == c.name }
+      flunk "Expected column %s not found" % name unless name
+      assert_equal expected_type, column.type
+      assert_equal options[:default],   column.default   if options.has_key?(:default)
+      assert_equal options[:primary],   column.primary   if options.has_key?(:primary)
+      assert_equal options[:sql_type],  column.sql_type  if options.has_key?(:sql_type)
+      assert_equal options[:limit],     column.limit     if options.has_key?(:limit)
+      assert_equal options[:scale],     column.scale     if options.has_key?(:scale)
+      assert_equal options[:precision], column.precision if options.has_key?(:precision)
+    end
+    
 end
 
 def model
