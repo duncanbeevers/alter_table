@@ -2,17 +2,7 @@ require File.join(File.dirname(__FILE__), 'test_helper')
 
 class AlterTableTest < ActiveRecord::TestCase
   def setup
-    @retry = true
-    ActiveRecord::Migration.verbose = false
-    begin
-      create_model_table
-    rescue ActiveRecord::StatementInvalid
-      drop_model_table
-      if @retry
-        @retry = false
-        retry
-      end
-    end
+    create_model_table!
   end
   
   def teardown
@@ -31,6 +21,20 @@ class AlterTableTest < ActiveRecord::TestCase
   private
     def create_model_table
       ActiveRecord::Base.connection.create_table('users') do |t|
+      end
+    end
+    
+    def create_model_table!
+      @retry = true
+      ActiveRecord::Migration.verbose = false
+      begin
+        create_model_table
+      rescue ActiveRecord::StatementInvalid
+        drop_model_table
+        if @retry
+          @retry = false
+          retry
+        end
       end
     end
     
