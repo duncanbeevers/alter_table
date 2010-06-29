@@ -65,21 +65,11 @@ module AlterTable
     end
     
     def sql
-      @operations.map { |operation| sql_for_operation(*operation) }.
+      @operations.map { |(m, payload)| method('sql_for_%s' % m).call(*payload) }.
         select { |s| !s.blank? }.join(',')
     end
     
     private
-    def sql_for_operation(operation, payload)
-      case operation
-      when :add_column    then sql_for_add_column(*payload)
-      when :remove_column then sql_for_remove_column(*payload)
-      when :rename_column then sql_for_rename_column(*payload)
-      when :add_index     then sql_for_add_index(*payload)
-      when :remove_index  then sql_for_remove_index(*payload)
-      end
-    end
-    
     def sql_for_add_column(*args)
       column_name = args.shift
       type        = args.shift
