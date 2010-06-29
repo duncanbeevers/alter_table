@@ -40,6 +40,17 @@ class AlterTableTest < ActiveRecord::TestCase
     assert_no_column 'age'
   end
   
+  def test_remove_multiple_columns
+    add_name_column
+    add_age_column
+    assert_queries(1) do
+      alter_model_table do |t|
+        t.remove_column 'name'
+        t.remove_column 'age'
+      end
+    end
+  end
+  
   def test_add_multiple_columns
     assert_queries(1) do
       alter_model_table do |t|
