@@ -10,10 +10,7 @@ class AlterTableTest < ActiveRecord::TestCase
   end
   
   def test_add_column
-    alter_model_table do |t|
-      t.add_column 'name', :string
-    end
-    assert_column 'name', :string
+    add_name_column
   end
   
   def test_remove_column
@@ -52,13 +49,7 @@ class AlterTableTest < ActiveRecord::TestCase
   end
   
   def test_add_index
-    add_age_column
-    alter_model_table do |t|
-      t.add_index [ 'age' ], :unique => true
-    end
-    assert_index 'index_users_on_age',
-      :unique  => true,
-      :columns => [ 'age' ]
+    add_indexed_age_column
   end
   
   def test_remove_index
@@ -97,6 +88,13 @@ class AlterTableTest < ActiveRecord::TestCase
       ActiveRecord::Base.connection.alter_table(model.table_name) do |t|
         yield(t)
       end
+    end
+    
+    def add_name_column
+      alter_model_table do |t|
+        t.add_column 'name', :string
+      end
+      assert_column 'name', :string
     end
     
     def add_age_column
