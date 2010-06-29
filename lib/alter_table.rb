@@ -11,23 +11,12 @@ module AlterTable
     def alter_table table_name
       acc = TableOperationAccumulator.new(table_name, self)
       yield acc
+      puts acc.report if ActiveRecord::Migration.verbose
       
-      report_operations(acc) if ActiveRecord::Migration.verbose
       execute("ALTER TABLE %s %s" % [
         quote_table_name(table_name),
         acc.sql
       ])
-    end
-    
-    def report_operations(acc)
-      # if !acc.add_columns.blank?
-      #   puts "* Adding columns:\n%s" %
-      #     acc.add_columns.map { |ac| "\t%s" % ac.map { |c| c.inspect } }.join("\n")
-      # end
-      # if !acc.remove_columns.blank?
-      #   puts "* Removing columns: %s" %
-      #     acc.remove_columns.map { |rc| "\t%s" % rc.inspect }.join("\n")
-      # end
     end
   end
   
@@ -60,8 +49,10 @@ module AlterTable
       @operations << [ :rename_column, [ old_name, new_name ] ]
     end
     
-    def add_index column_names, options = {}
-      @operations << [ :add_index, [ Array(column_names), options ] ]
+    def add_index column_name_or_names, options = {}
+      column_names = Array(column_name_or_names)
+      index_name = options[:name] || index_name(@table_name, :column => column_names)
+      @operations << [ :add_index, [ index_name, column_names, options ] ]
     end
     
     def remove_index index_name
@@ -71,6 +62,11 @@ module AlterTable
     def sql
       @operations.map { |(m, payload)| method('sql_for_%s' % m).call(*payload) }.
         select { |s| !s.blank? }.join(',')
+    end
+    
+    def report
+      @operations.map { |(m, payload)| method('report_for_%s' % m).call(*payload) }.
+        select { |s| !s.blank? }
     end
     
     private
@@ -101,9 +97,8 @@ module AlterTable
       ]
     end
     
-    def sql_for_add_index(column_names, options)
+    def sql_for_add_index(index_name, column_names, options)
       index_type = options[:unique] ? 'UNIQUE' : ''
-      index_name = options[:name] || index_name(@table_name, :column => column_names)
       quoted_column_names = column_names.map { |c| quote_column_name(c) }.join(',')
       "ADD %s INDEX %s (%s)" % [
         index_type,
@@ -114,6 +109,37 @@ module AlterTable
     
     def sql_for_remove_index(index_name)
       "DROP INDEX %s" % [ quote_column_name(index_name) ]
+    end
+    
+    def report_for_add_column(column_name, type, options)
+      "  A %-24s :%s %s" % [
+        column_name,
+        type,
+        options.blank? ? nil : options.inspect
+      ]
+    end
+    
+    def report_for_remove_column(column_name)
+      "  D %s" % [ column_name ]
+    end
+    
+    def report_for_rename_column(old_name, new_name)
+      "  M %s\t->\t%s" % [
+        old_name,
+        new_name
+      ]
+    end
+    
+    def report_for_add_index(index_name, column_names, options)
+      "  Add index: %s\t[ %s ]\t%s" % [
+        index_name,
+        column_names.join(' '),
+        options.blank? ? nil : options.inspect
+      ]
+    end
+    
+    def report_for_remove_index(index_name)
+      "  Remove index: %s" % index_name
     end
   end
   
