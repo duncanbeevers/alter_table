@@ -102,7 +102,7 @@ module AlterTable
       "CHANGE %s %s %s" % [
         @base.quote_column_name(old_name),
         @base.quote_column_name(new_name),
-        @col_defs[old_name]
+        @col_defs[old_name.to_s]
       ]
     end
     

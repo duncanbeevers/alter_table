@@ -33,6 +33,15 @@ class AlterTableTest < ActiveRecord::TestCase
     assert_no_column 'age'
   end
   
+  def test_rename_column_symbol
+    add_age_column
+    alter_model_table do |t|
+      t.rename_column :age, :years_old
+    end
+    assert_column 'years_old', :integer
+    assert_no_column 'age'
+  end
+  
   def test_add_multiple_columns
     assert_queries(1) do
       alter_model_table do |t|
