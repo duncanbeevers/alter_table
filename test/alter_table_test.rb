@@ -11,6 +11,7 @@ class AlterTableTest < ActiveRecord::TestCase
   
   def test_add_column
     add_name_column
+    assert_column 'name', :string
   end
   
   def test_remove_column
@@ -94,14 +95,12 @@ class AlterTableTest < ActiveRecord::TestCase
       alter_model_table do |t|
         t.add_column 'name', :string
       end
-      assert_column 'name', :string
     end
     
     def add_age_column
       alter_model_table do |t|
         t.add_column 'age', :integer
       end
-      assert_column 'age', :integer
     end
     
     def add_indexed_age_column
