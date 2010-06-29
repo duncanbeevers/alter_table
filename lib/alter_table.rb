@@ -44,7 +44,11 @@ module AlterTable
     end
     
     def add_column *args
-      @operations << [ :add_column, args ]
+      column_name = args.shift
+      type        = args.shift
+      options     = args.extract_options!
+      
+      @operations << [ :add_column, [ column_name, type, options ] ]
     end
     
     def remove_column *column_names
@@ -70,11 +74,7 @@ module AlterTable
     end
     
     private
-    def sql_for_add_column(*args)
-      column_name = args.shift
-      type        = args.shift
-      options     = args.extract_options!
-      
+    def sql_for_add_column(column_name, type, options)
       sql = "ADD %s %s" % [
         quote_column_name(column_name),
         type_to_sql(type, options[:limit], options[:precision], options[:scale])
