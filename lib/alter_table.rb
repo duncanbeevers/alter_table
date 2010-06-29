@@ -32,9 +32,14 @@ module AlterTable
   end
   
   class TableOperationAccumulator
-    def initialize(table_name, base)
+    attr_reader :ar_class
+    delegate :quote_column_name, :quote_table_name, :index_name,
+             :type_to_sql, :add_column_options!, :select,
+             :to => :ar_class
+    
+    def initialize(table_name, ar_class)
       @table_name = table_name
-      @base       = base
+      @ar_class   = ar_class
       @operations = []
     end
     
@@ -81,44 +86,44 @@ module AlterTable
       options     = args.extract_options!
       
       sql = "ADD %s %s" % [
-        @base.quote_column_name(column_name),
-        @base.type_to_sql(type, options[:limit], options[:precision], options[:scale])
+        quote_column_name(column_name),
+        type_to_sql(type, options[:limit], options[:precision], options[:scale])
       ]
       
-      @base.add_column_options!(sql, options)
+      add_column_options!(sql, options)
       sql
     end
     
     def sql_for_remove_column(column_name)
-      "DROP %s" % @base.quote_column_name(column_name)
+      "DROP %s" % quote_column_name(column_name)
     end
     
     def sql_for_rename_column(old_name, new_name)
-      @col_defs ||= @base.send(:select, "SHOW COLUMNS FROM %s" % @base.quote_table_name(@table_name)).inject({}) do |a, c|
+      @col_defs ||= select("SHOW COLUMNS FROM %s" % quote_table_name(@table_name)).inject({}) do |a, c|
         a[c['Field']] = c['Type']
         a
       end
       
       "CHANGE %s %s %s" % [
-        @base.quote_column_name(old_name),
-        @base.quote_column_name(new_name),
+        quote_column_name(old_name),
+        quote_column_name(new_name),
         @col_defs[old_name.to_s]
       ]
     end
     
     def sql_for_add_index(column_names, options)
       index_type = options[:unique] ? 'UNIQUE' : ''
-      index_name = options[:name] || @base.index_name(@table_name, :column => column_names)
-      quoted_column_names = column_names.map { |c| @base.quote_column_name(c) }.join(',')
+      index_name = options[:name] || index_name(@table_name, :column => column_names)
+      quoted_column_names = column_names.map { |c| quote_column_name(c) }.join(',')
       "ADD %s INDEX %s (%s)" % [
         index_type,
-        @base.quote_column_name(index_name),
+        quote_column_name(index_name),
         quoted_column_names
       ]
     end
     
     def sql_for_remove_index(index_name)
-      "DROP INDEX %s" % [ @base.quote_column_name(index_name) ]
+      "DROP INDEX %s" % [ quote_column_name(index_name) ]
     end
   end
   
