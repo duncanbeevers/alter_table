@@ -21,7 +21,9 @@ module AlterTable
   end
   
   class TableOperationAccumulator
-    attr_reader :ar_class
+    CHANGE_COLUMN_SQL = "CHANGE COLUMN %s %s %s"
+    
+    attr_reader :ar_class, :column_defs
     delegate :quote_column_name, :quote_table_name, :index_name,
              :type_to_sql, :add_column_options!, :select,
              :to => :ar_class
@@ -30,6 +32,7 @@ module AlterTable
       @table_name = table_name
       @ar_class   = ar_class
       @operations = []
+      load_column_defs
     end
     
     def add_column *args
@@ -58,6 +61,13 @@ module AlterTable
     def remove_index index_name
       @operations << [ :remove_index, [ index_name ] ]
     end
+
+    def change_column *args
+      column_name = args.shift
+      type        = args.shift
+      options     = args.extract_options!
+      @operations << [ :change_column, [ column_name, type, options ] ]
+    end
     
     def sql
       @operations.map { |(m, payload)| method('sql_for_%s' % m).call(*payload) }.
@@ -76,6 +86,7 @@ module AlterTable
         type_to_sql(type, options[:limit], options[:precision], options[:scale])
       ]
       
+      # define nullability and defaults
       add_column_options!(sql, options)
       sql
     end
@@ -83,17 +94,12 @@ module AlterTable
     def sql_for_remove_column(column_name)
       "DROP %s" % quote_column_name(column_name)
     end
-    
+
     def sql_for_rename_column(old_name, new_name)
-      @col_defs ||= select("SHOW COLUMNS FROM %s" % quote_table_name(@table_name)).inject({}) do |a, c|
-        a[c['Field']] = c['Type']
-        a
-      end
-      
-      "CHANGE %s %s %s" % [
+      CHANGE_COLUMN_SQL % [
         quote_column_name(old_name),
         quote_column_name(new_name),
-        @col_defs[old_name.to_s]
+        column_defs[old_name.to_s]
       ]
     end
     
@@ -109,6 +115,18 @@ module AlterTable
     
     def sql_for_remove_index(index_name)
       "DROP INDEX %s" % [ quote_column_name(index_name) ]
+    end
+
+    def sql_for_change_column(column_name, type, options)
+      sql = CHANGE_COLUMN_SQL % [
+        quote_column_name(column_name),
+        quote_column_name(column_name),
+        type_to_sql(type, options[:limit], options[:precision], options[:scale])
+      ]
+
+      # define nullability and defaults
+      add_column_options!(sql, options)
+      sql
     end
     
     def report_for_add_column(column_name, type, options)
@@ -129,6 +147,16 @@ module AlterTable
         new_name
       ]
     end
+
+    def report_for_change_column(column_name, type, options)
+      old_type = column_defs[column_name.to_s]
+      " M %s %s\t->\t%s %s" % [
+        column_name,
+        old_type,
+        column_name,
+        type_to_sql(type, options[:limit], options[:precision], options[:scale])
+      ]
+    end
     
     def report_for_add_index(index_name, column_names, options)
       "  Add index: %s\t[ %s ]\t%s" % [
@@ -140,6 +168,13 @@ module AlterTable
     
     def report_for_remove_index(index_name)
       "  Remove index: %s" % index_name
+    end
+
+    def load_column_defs
+      @column_defs = select("SHOW COLUMNS FROM %s" % quote_table_name(@table_name)).inject({}) do |a, c|
+        a[c['Field']] = c['Type']
+        a
+      end
     end
   end
   
